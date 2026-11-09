@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bug Tracker</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+:root{--bg:#f6f7f4;--surface:#fff;--ink:#1d2421;--muted:#6a746f;--line:#dfe3dd;--accent:#0f766e;--accent-ink:#fff;
+--p-low:#6a746f;--p-med:#2563eb;--p-high:#c2620a;--p-crit:#c0262d;
+--s-open:#c2620a;--s-prog:#2563eb;--s-done:#0f766e;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121715;--surface:#1b221f;--ink:#e8ede9;--muted:#8d9a93;--line:#2c3631;--accent:#2dd4bf;--accent-ink:#06201c;
+--p-low:#8d9a93;--p-med:#60a5fa;--p-high:#fb923c;--p-crit:#f87171;--s-open:#fb923c;--s-prog:#60a5fa;--s-done:#2dd4bf;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121715;--surface:#1b221f;--ink:#e8ede9;--muted:#8d9a93;--line:#2c3631;--accent:#2dd4bf;--accent-ink:#06201c;
+--p-low:#8d9a93;--p-med:#60a5fa;--p-high:#fb923c;--p-crit:#f87171;--s-open:#fb923c;--s-prog:#60a5fa;--s-done:#2dd4bf;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:20px clamp(16px,4vw,40px)}
+h1{font-size:28px;letter-spacing:-.02em}
+.tools{display:flex;gap:10px;align-items:center}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:7px 14px;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:500}
+.btn.danger{color:var(--p-crit)}
+main{padding:0 clamp(16px,4vw,40px) 40px}
+.board{display:grid;grid-template-columns:repeat(3,minmax(240px,1fr));gap:16px;overflow-x:auto}
+.col{background:color-mix(in srgb,var(--line) 35%,transparent);border-radius:12px;padding:12px;min-height:220px}
+.col.over{outline:2px dashed var(--accent)}
+.col h2{font-size:16px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.dot{width:10px;height:10px;border-radius:50%}
+.count{color:var(--muted);font-family:"IBM Plex Sans",sans-serif;font-weight:400;font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--pc);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:grab}
+.card:active{cursor:grabbing}
+.card.dragging{opacity:.4}
+.card b{font-weight:500;display:block;margin-bottom:6px}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+.tag{border:1px solid currentColor;border-radius:99px;padding:0 8px;font-size:12px}
+.empty{color:var(--muted);font-size:13px;padding:8px 2px}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;min-width:680px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-weight:500;color:var(--muted);font-size:13px}
+tr:last-child td{border-bottom:0}
+td.title{cursor:pointer;font-weight:500}
+td.title:hover{color:var(--accent)}
+td select{padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);width:min(560px,94vw);padding:0;max-height:92vh}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+form{padding:20px;display:grid;gap:12px}
+label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);color:var(--ink);width:100%}
+textarea{min-height:80px;resize:vertical}
+.row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.actions{display:flex;gap:10px;justify-content:space-between}
+.comments{border-top:1px solid var(--line);padding:16px 20px 20px;display:grid;gap:10px}
+.comment{background:var(--bg);border-radius:8px;padding:8px 12px;font-size:14px}
+.comment time{display:block;color:var(--muted);font-size:12px}
+.addc{display:flex;gap:8px}
+@media (max-width:640px){.row{grid-template-columns:1fr}.board{grid-template-columns:repeat(3,85vw)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Bug tracker</h1>
+  <div class="tools">
+    <div class="seg" role="group" aria-label="View">
+      <button id="vBoard" aria-pressed="true">Board</button>
+      <button id="vList" aria-pressed="false">List</button>
+    </div>
+    <button class="btn primary" id="newBtn">New bug</button>
+  </div>
+</header>
+<main id="root"></main>
+
+<dialog id="dlg">
+  <form id="form" method="dialog" onsubmit="return false">
+    <h2 id="dlgTitle">New bug</h2>
+    <label>Title<input id="fTitle" required maxlength="120"></label>
+    <label>Description<textarea id="fDesc"></textarea></label>
+    <div class="row">
+      <label>Status<select id="fStatus"></select></label>
+      <label>Assignee<input id="fAssignee" placeholder="Name"></label>
+      <label>Priority<select id="fPriority"></select></label>
+      <label>Severity<select id="fSeverity"></select></label>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn danger" id="delBtn">Delete bug</button>
+      <span style="display:flex;gap:10px">
+        <button type="button" class="btn" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn primary">Save bug</button>
+      </span>
+    </div>
+  </form>
+  <div class="comments" id="commentsBox">
+    <h3>Comments</h3>
+    <div id="clist"></div>
+    <div class="addc"><input id="cText" placeholder="Write a comment"><button class="btn" id="cBtn">Add comment</button></div>
+  </div>
+</dialog>
+
+<script>
+const STATUSES=[["open","Open","--s-open"],["progress","In progress","--s-prog"],["done","Done","--s-done"]];
+const PRIORITIES=[["low","Low","--p-low"],["medium","Medium","--p-med"],["high","High","--p-high"],["critical","Critical","--p-crit"]];
+const SEVERITIES=["Minor","Major","Blocker"];
+const KEY="bugtracker.v1";
+let bugs=[],view="board",editId=null;
+
+function load(){
+  try{const r=localStorage.getItem(KEY);if(r){bugs=JSON.parse(r).bugs||[];view=JSON.parse(r).view||"board";return}}catch(e){}
+  const now=Date.now();
+  bugs=[
+    {id:1,title:"Login button doesn’t respond on Safari",description:"Clicking Sign in does nothing on Safari 17.",status:"open",priority:"high",severity:"Major",assignee:"Me",comments:[],created:now},
+    {id:2,title:"Typo on the pricing page",description:"“Recieve” should be “Receive”.",status:"progress",priority:"low",severity:"Minor",assignee:"Me",comments:[{text:"Found it in the footer too.",at:now}],created:now},
+    {id:3,title:"Crash when uploading files over 50 MB",description:"App freezes, then reloads.",status:"open",priority:"critical",severity:"Blocker",assignee:"",comments:[],created:now}
+  ];
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({bugs,view}))}catch(e){}}
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pri=k=>PRIORITIES.find(p=>p[0]===k)||PRIORITIES[1];
+const fmt=t=>new Date(t).toLocaleString([], {dateStyle:"medium",timeStyle:"short"});
+const opts=(arr,sel)=>arr.map(a=>{const v=Array.isArray(a)?a[0]:a,l=Array.isArray(a)?a[1]:a;return `<option value="${v}"${v===sel?" selected":""}>${l}</option>`}).join("");
+
+function render(){
+  document.getElementById("vBoard").setAttribute("aria-pressed",view==="board");
+  document.getElementById("vList").setAttribute("aria-pressed",view==="list");
+  const root=document.getElementById("root");
+  if(view==="board"){
+    root.innerHTML=`<div class="board">`+STATUSES.map(([sk,sl,sc])=>{
+      const items=bugs.filter(b=>b.status===sk);
+      return `<section class="col" data-status="${sk}"><h2><span class="dot" style="background:var(${sc})"></span>${sl} <span class="count">${items.length}</span></h2>`+
+      (items.map(b=>{const p=pri(b.priority);return `<div class="card" draggable="true" data-id="${b.id}" style="--pc:var(${p[2]})" tabindex="0"><b>${esc(b.title)}</b><div class="meta"><span class="tag" style="color:var(${p[2]})">${p[1]}</span><span>${esc(b.severity)}</span><span>${b.assignee?esc(b.assignee):"Unassigned"}</span>${b.comments.length?`<span>${b.comments.length} comment${b.comments.length>1?"s":""}</span>`:""}</div></div>`}).join("")||`<div class="empty">No bugs here. Drop one in or add a new bug.</div>`)+`</section>`}).join("")+`</div>`;
+  }else{
+    root.innerHTML=`<div class="tablewrap"><table><thead><tr><th>Title</th><th>Status</th><th>Priority</th><th>Severity</th><th>Assignee</th><th>Updated</th></tr></thead><tbody>`+
+    (bugs.map(b=>{const p=pri(b.priority);return `<tr data-id="${b.id}"><td class="title">${esc(b.title)}</td><td><select data-status="${b.id}" aria-label="Status">${opts(STATUSES,b.status)}</select></td><td><span class="tag" style="color:var(${p[2]})">${p[1]}</span></td><td>${esc(b.severity)}</td><td>${b.assignee?esc(b.assignee):"Unassigned"}</td><td>${fmt(b.updated||b.created)}</td></tr>`}).join("")||`<tr><td colspan="6" class="empty">No bugs yet. Select New bug to add one.</td></tr>`)+`</tbody></table></div>`;
+  }
+}
+
+function openDlg(id){
+  editId=id;const b=bugs.find(x=>x.id===id)||{title:"",description:"",status:"open",priority:"medium",severity:"Major",assignee:"",comments:[]};
+  document.getElementById("dlgTitle").textContent=id?"Edit bug":"New bug";
+  fTitle.value=b.title;fDesc.value=b.description;fAssignee.value=b.assignee;
+  fStatus.innerHTML=opts(STATUSES,b.status);fPriority.innerHTML=opts(PRIORITIES,b.priority);fSeverity.innerHTML=opts(SEVERITIES,b.severity);
+  delBtn.style.visibility=id?"visible":"hidden";commentsBox.style.display=id?"grid":"none";
+  renderComments();dlg.showModal();fTitle.focus();
+}
+function renderComments(){
+  const b=bugs.find(x=>x.id===editId);
+  clist.innerHTML=b&&b.comments.length?b.comments.map(c=>`<div class="comment">${esc(c.text)}<time>${fmt(c.at)}</time></div>`).join(""):`<div class="empty">No comments yet.</div>`;
+}
+form.addEventListener("submit",()=>{
+  if(!fTitle.value.trim()){fTitle.focus();return}
+  const data={title:fTitle.value.trim(),description:fDesc.value.trim(),status:fStatus.value,priority:fPriority.value,severity:fSeverity.value,assignee:fAssignee.value.trim(),updated:Date.now()};
+  if(editId){Object.assign(bugs.find(x=>x.id===editId),data)}
+  else bugs.unshift({id:Date.now(),comments:[],created:Date.now(),...data});
+  save();render();dlg.close();
+});
+cancelBtn.onclick=()=>dlg.close();
+delBtn.onclick=()=>{if(confirm("Delete this bug? This can’t be undone.")){bugs=bugs.filter(x=>x.id!==editId);save();render();dlg.close()}};
+cBtn.onclick=addComment;
+cText.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addComment()}});
+function addComment(){
+  const t=cText.value.trim();if(!t||!editId)return;
+  const b=bugs.find(x=>x.id===editId);b.comments.push({text:t,at:Date.now()});b.updated=Date.now();
+  cText.value="";save();renderComments();render();
+}
+newBtn.onclick=()=>openDlg(null);
+vBoard.onclick=()=>{view="board";save();render()};
+vList.onclick=()=>{view="list";save();render()};
+
+root.addEventListener("click",e=>{
+  if(e.target.closest("select"))return;
+  const el=e.target.closest("[data-id]");
+  if(el&&(el.classList.contains("card")||e.target.closest("td.title")))openDlg(+el.dataset.id);
+});
+root.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList.contains("card"))openDlg(+e.target.dataset.id)});
+root.addEventListener("change",e=>{
+  const id=e.target.dataset.status;if(!id)return;
+  const b=bugs.find(x=>x.id===+id);b.status=e.target.value;b.updated=Date.now();save();render();
+});
+let dragId=null;
+root.addEventListener("dragstart",e=>{const c=e.target.closest(".card");if(!c)return;dragId=+c.dataset.id;c.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(dragId))});
+root.addEventListener("dragend",()=>{dragId=null;document.querySelectorAll(".dragging,.over").forEach(n=>n.classList.remove("dragging","over"))});
+root.addEventListener("dragover",e=>{const col=e.target.closest(".col");if(!col)return;e.preventDefault();document.querySelectorAll(".over").forEach(n=>n.classList.remove("over"));col.classList.add("over")});
+root.addEventListener("drop",e=>{
+  const col=e.target.closest(".col");if(!col||dragId==null)return;e.preventDefault();
+  const b=bugs.find(x=>x.id===dragId);if(b&&b.status!==col.dataset.status){b.status=col.dataset.status;b.updated=Date.now();save()}
+  render();
+});
+load();render();
+</script>
+</body>
+</html>
